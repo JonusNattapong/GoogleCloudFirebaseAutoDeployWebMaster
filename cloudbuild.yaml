@@ -1,0 +1,39 @@
+# Cloud Build configuration for automated web deployment
+steps:
+  # Install dependencies
+  - name: 'node:16'
+    entrypoint: npm
+    args: ['install']
+
+  # Run tests
+  - name: 'node:16'
+    entrypoint: npm
+    args: ['test', '--', '--passWithNoTests']
+    env:
+      - 'CI=true'
+
+  # Build the application
+  - name: 'node:16'
+    entrypoint: npm
+    args: ['run', 'build']
+
+  # Deploy to Firebase Hosting
+  - name: 'gcr.io/$PROJECT_ID/firebase'
+    args:
+      - deploy
+      - --only=hosting
+      - --project=$PROJECT_ID
+      - --token=$_FIREBASE_TOKEN
+
+# Store build artifacts
+artifacts:
+  objects:
+    location: 'gs://${PROJECT_ID}_cloudbuild/artifacts/'
+    paths: ['build/**/*']
+
+# Configure timeout
+timeout: '30m'
+
+# Substitutions for sensitive data
+substitutions:
+  _FIREBASE_TOKEN: '' # Set this in Cloud Build trigger settings
